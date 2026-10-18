@@ -172,6 +172,7 @@
             Name = "FrmBusquedaDeExpedientes";
             Text = "FrmBusquedaDeExpedientes";
             FormClosing += FrmBusquedaDeExpedientes_FormClosing;
+            Load += FrmBusquedaDeExpedientes_Load;
             ((System.ComponentModel.ISupportInitialize)pictureBox1).EndInit();
             ((System.ComponentModel.ISupportInitialize)txasalida).EndInit();
             ResumeLayout(false);

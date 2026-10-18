@@ -4,6 +4,8 @@ using System.ComponentModel;
 using System.Data;
 using System.Drawing;
 using System.Text;
+using System.IO;
+using System.Text.Json;
 using System.Windows.Forms;
 
 namespace TRABAJO_P
@@ -21,7 +23,7 @@ namespace TRABAJO_P
             return instancia;
         }
 
-        //Arreglos para almacenar los datos (limite de 50 registros)
+        // Arreglos para almacenar los datos (límite de 50 registros).
         public static string[] codigo = new string[50];
         public static string[] remitente = new string[50];
         public static string[] asunto = new string[50];
@@ -30,6 +32,71 @@ namespace TRABAJO_P
         public static string[] fechas = new string[50];
         public static string[] estados = new string[50];
         public static int cantidad = 0;
+        private static readonly string archivoDatos = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "TrabajoP", "expedientes.json");
+
+        private class DatosExpedientes
+        {
+            public string[] Codigo { get; set; } = Array.Empty<string>();
+            public string[] Remitente { get; set; } = Array.Empty<string>();
+            public string[] Asunto { get; set; } = Array.Empty<string>();
+            public string[] TipoDocumento { get; set; } = Array.Empty<string>();
+            public string[] NumeroDocumento { get; set; } = Array.Empty<string>();
+            public string[] Fecha { get; set; } = Array.Empty<string>();
+            public string[] Estado { get; set; } = Array.Empty<string>();
+        }
+
+        static FrmGestionExpedientes()
+        {
+            CargarExpedientes();
+        }
+
+        private static void CargarExpedientes()
+        {
+            try
+            {
+                if (!File.Exists(archivoDatos)) return;
+                var datos = JsonSerializer.Deserialize<DatosExpedientes>(File.ReadAllText(archivoDatos));
+                if (datos == null) return;
+
+                cantidad = Math.Min(datos.Codigo.Length, codigo.Length);
+                Array.Copy(datos.Codigo, codigo, cantidad);
+                Copiar(datos.Remitente, remitente);
+                Copiar(datos.Asunto, asunto);
+                Copiar(datos.TipoDocumento, tipodedocumento);
+                Copiar(datos.NumeroDocumento, numerodeldocumento);
+                Copiar(datos.Fecha, fechas);
+                Copiar(datos.Estado, estados);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudieron cargar los expedientes: " + ex.Message,
+                    "Error de lectura", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private static void Copiar(string[] origen, string[] destino)
+        {
+            Array.Copy(origen, destino, Math.Min(origen.Length, destino.Length));
+        }
+
+        public static void GuardarExpedientes()
+        {
+            Directory.CreateDirectory(Path.GetDirectoryName(archivoDatos)!);
+            var datos = new DatosExpedientes
+            {
+                Codigo = codigo.Take(cantidad).ToArray(),
+                Remitente = remitente.Take(cantidad).ToArray(),
+                Asunto = asunto.Take(cantidad).ToArray(),
+                TipoDocumento = tipodedocumento.Take(cantidad).ToArray(),
+                NumeroDocumento = numerodeldocumento.Take(cantidad).ToArray(),
+                Fecha = fechas.Take(cantidad).ToArray(),
+                Estado = estados.Take(cantidad).ToArray()
+            };
+            File.WriteAllText(archivoDatos, JsonSerializer.Serialize(datos,
+                new JsonSerializerOptions { WriteIndented = true }));
+        }
 
 
         public FrmGestionExpedientes()
@@ -48,6 +115,17 @@ namespace TRABAJO_P
                 fechas[cantidad] = DateTime.Now.ToString("dd/MM/yyyy");
                 estados[cantidad] = "Registrado";
                 cantidad++;
+                try
+                {
+                    GuardarExpedientes();
+                }
+                catch (Exception ex)
+                {
+                    cantidad--;
+                    MessageBox.Show("No se pudo guardar el expediente: " + ex.Message,
+                        "Error al guardar", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    return;
+                }
 
                 // Agrega el expediente a la tabla.
                 txasalida.Rows.Add(txtcodigo.Text,
@@ -122,6 +200,7 @@ namespace TRABAJO_P
             }
 
             //Verificar que el codigo no este repetido
+            txasalida.Rows.Clear();
             for (int i = 0; i < cantidad; i++)
             {
                 if (codigo[i] == txtcodigo.Text)

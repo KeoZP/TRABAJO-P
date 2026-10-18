@@ -104,6 +104,16 @@ namespace TRABAJO_P
                 }
             }
 
+            try
+            {
+                FrmGestionExpedientes.GuardarExpedientes();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("No se pudo guardar el orden de los expedientes: " + ex.Message,
+                    "Error al guardar", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+
             //Mostrar todos los expedientes ya ordenados
             txasalida.Rows.Clear();
             for (int i = 0; i < FrmGestionExpedientes.cantidad; i++)
@@ -147,6 +157,11 @@ namespace TRABAJO_P
         private void button1_Click(object sender, EventArgs e)
         {
             Limpiar();
+        }
+
+        private void FrmBusquedaDeExpedientes_Load(object sender, EventArgs e)
+        {
+
         }
     }
 }
